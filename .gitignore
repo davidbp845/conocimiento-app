@@ -1,0 +1,34 @@
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Bytecode y cachés de Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Variables de entorno y secretos — NUNCA subir API keys al repo
+.env
+!.env.example
+*.key
+credentials/
+
+# vault_in y vault_out SÍ se versionan (vault_out trae contenido de
+# ejemplo — ver README.md): no se listan aquí a propósito.
+
+# Editores
+.vscode/
+.idea/
+*.swp
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

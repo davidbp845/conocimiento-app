@@ -1,0 +1,11 @@
+# Configuración declarativa de este vault. Todo es opcional: sin este
+# fichero (o con él vacío), se usan los valores por defecto del schema
+# (config/schema.py), que son los mismos documentados en README.md.
+
+arbol:
+  # Nº mínimo de notas afines para crear una carpeta nueva en vault_out/
+  # (regla 2 de "Crecimiento del árbol" en README.md).
+  umbral_minimo_notas_por_categoria: 5
+  # Niveles máximos de profundidad de una categoria, p.ej. "git/commits" = 2
+  # (regla 4 de "Crecimiento del árbol" en README.md).
+  profundidad_maxima_categoria: 2

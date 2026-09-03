@@ -1,0 +1,12 @@
+[server]
+port = 8503
+
+[client]
+# Quita el botón "Deploy" y el menú de tres puntos de la cabecera.
+# A diferencia de ocultarla con CSS inyectada vía st.markdown (que
+# llega como delta por WebSocket DESPUÉS del primer pintado y por eso
+# provoca un parpadeo: la cabecera aparece con su hueco reservado y
+# luego desaparece, empujando el título hacia arriba), este ajuste se
+# aplica antes del primer render — nunca llega a mostrarse el estado
+# "completo" de la cabecera.
+toolbarMode = "minimal"
