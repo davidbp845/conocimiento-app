@@ -1,4 +1,4 @@
-from adapters.out.llm_mock import ClasificadorNotasMock, GeneradorRespuestasMock
+from adapters.out.llm_mock import ClasificadorNotasMock, GeneradorRespuestasMock, NormalizadorVaultInMock
 from domain.entities import FuenteNota, Nota
 
 
@@ -40,3 +40,19 @@ def test_clasificador_mock_nunca_propone_categoria():
     sugerencia = ClasificadorNotasMock().clasificar(nota, categorias_existentes=["git", "docker"])
     assert sugerencia.categoria is None
     assert sugerencia.tags == ["git"]
+
+
+def test_normalizador_mock_devuelve_una_unica_nota_con_el_texto_intacto():
+    normalizadas = NormalizadorVaultInMock().normalizar("# Cómo hacer git rebase\ncontenido")
+    assert len(normalizadas) == 1
+    assert "contenido" in normalizadas[0].contenido
+
+
+def test_normalizador_mock_deriva_el_titulo_de_la_primera_linea_no_vacia():
+    normalizadas = NormalizadorVaultInMock().normalizar("\n\n# Un título cualquiera\nresto")
+    assert normalizadas[0].titulo == "Un título cualquiera"
+
+
+def test_normalizador_mock_con_texto_vacio_no_deja_titulo_vacio():
+    normalizadas = NormalizadorVaultInMock().normalizar("")
+    assert normalizadas[0].titulo == "Nota sin título"

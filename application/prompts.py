@@ -53,6 +53,62 @@ y 5 tags en minúsculas y en español salvo que el término técnico solo \
 exista en inglés."""
 
 
+PROMPT_NORMALIZADOR = """\
+Recibes el contenido crudo de un fichero de vault_in/ de una base de \
+conocimiento personal: texto pegado a mano (a veces desde una \
+conversación con otra IA, a veces dictado o escrito directamente), \
+sin frontmatter y a veces sin la estructura que tendría si se hubiera \
+escrito pensando en archivarse.
+
+Tu tarea es transformarlo en una o varias notas ya listas para \
+archivar, siguiendo estas reglas:
+
+1. Si el texto llegó aplanado (indicios: párrafos larguísimos en una \
+sola línea, ausencia casi total de saltos de línea, o enlaces \
+"tg://bot_command" — típico de un copia-pega desde una conversación \
+de IA a un canal de Telegram que se come los saltos de línea y \
+convierte cualquier "/palabra" en un enlace), reconstrúyelo: restaura \
+párrafos y listas, reconstruye en bloques de código los diagramas \
+ASCII que hayan perdido sus saltos de línea (si no es recuperable con \
+certeza, dilo en el propio texto en vez de inventar una precisión que \
+no tienes), y deshaz los enlaces de comando devolviéndolos a texto \
+plano o `código`. Si el texto ya tiene una estructura razonable, no \
+lo toques.
+
+2. Si el texto tiene varios turnos donde una IA repite una respuesta \
+anterior ya retocada con un dato nuevo del usuario, fusiona esos \
+fragmentos (conserva la versión más completa de cada punto, no las \
+dejes duplicadas) — pero solo si hay solapamiento real de contenido, \
+no solo porque el tema se repita.
+
+3. Si el texto mezcla temas realmente distintos sin relación entre sí \
+(no simples subtemas de la misma pregunta de fondo), sepáralos en \
+notas independientes — lo normal es que el resultado sea una sola \
+nota.
+
+4. Para cada nota resultante, decide:
+   - `titulo`: breve y específico (nunca genérico tipo "Ideas para el \
+negocio"), sin prefijos conversacionales ("Aquí tienes", "Claro,"...); \
+no lo copies literal de un encabezado si puedes ser más preciso.
+   - `resumen`: una sola frase.
+   - `tags`: entre 2 y 4, en minúsculas, en español salvo que el \
+término técnico solo exista en inglés.
+   - `pregunta_origen`: si el cuerpo es la respuesta directa de una IA \
+a una pregunta que no aparece escrita, reconstruye una pregunta \
+razonable y dilo explícitamente al final de `contenido`, entre \
+paréntesis (p. ej. "(pregunta_origen reconstruida a partir del \
+contenido; la pregunta real no estaba en el texto pegado)"); si el \
+cuerpo no es conversacional (una nota expositiva, una lista de \
+recursos...), usa null en vez de forzar una pregunta.
+   - `contenido`: el cuerpo final en Markdown, ya reformateado según \
+los puntos 1-3.
+
+No inventes contenido nuevo que no esté en el texto original — si \
+falta algo (p. ej. un turno que un aplanado se comió sin dejar \
+rastro), señálalo entre paréntesis en el propio contenido en vez de \
+rellenarlo."""
+
+
 def prompt_clasificador(categorias_existentes: list[str]) -> str:
     """categorias_existentes: rutas relativas ya presentes en
     vault_out/ (ver RepositorioNotas.listar_categorias), para que el

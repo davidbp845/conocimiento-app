@@ -12,6 +12,7 @@ def entorno(tmp_path, monkeypatch):
     vault = tmp_path / "vault_out"
     vault.mkdir()
     monkeypatch.setenv("VAULT_OUT_PATH", str(vault))
+    monkeypatch.setenv("VAULT_IN_PATH", str(tmp_path / "vault_in"))
     # mock: ni CLI ni tests dependen de red ni de ANTHROPIC_API_KEY.
     monkeypatch.setenv("PROVEEDOR_LLM", "mock")
     return vault
@@ -84,3 +85,42 @@ def test_reorganizar_sin_aplicar_no_mueve_nada(entorno):
     main(["reorganizar"])
 
     assert all(n.categoria is None for n in repo.listar())
+
+
+def test_normalizar_sin_ficheros_pendientes_lo_dice_explicitamente(tmp_path, entorno, capsys, monkeypatch):
+    vault_in = tmp_path / "vault_in"
+    vault_in.mkdir()
+    monkeypatch.setenv("VAULT_IN_PATH", str(vault_in))
+    (vault_in / "README.md").write_text("no es una nota", encoding="utf-8")
+
+    main(["normalizar"])
+
+    assert "vault_in/ no tiene ficheros pendientes." in capsys.readouterr().out
+
+
+def test_normalizar_sin_aplicar_no_toca_vault_in_ni_vault_out(tmp_path, entorno, monkeypatch):
+    vault_in = tmp_path / "vault_in"
+    vault_in.mkdir()
+    monkeypatch.setenv("VAULT_IN_PATH", str(vault_in))
+    (vault_in / "pegado.md").write_text("# Algo\ncontenido pegado a mano", encoding="utf-8")
+
+    main(["normalizar"])
+
+    assert (vault_in / "pegado.md").exists()
+    assert RepositorioNotasFilesystem(entorno).listar() == []
+
+
+def test_normalizar_con_aplicar_archiva_y_borra_el_fichero_de_vault_in(tmp_path, entorno, capsys, monkeypatch):
+    vault_in = tmp_path / "vault_in"
+    vault_in.mkdir()
+    monkeypatch.setenv("VAULT_IN_PATH", str(vault_in))
+    (vault_in / "pegado.md").write_text("# Sobre docker compose\ncontenido pegado a mano", encoding="utf-8")
+
+    main(["normalizar", "--aplicar"])
+
+    assert not (vault_in / "pegado.md").exists()
+    notas = RepositorioNotasFilesystem(entorno).listar()
+    assert len(notas) == 1
+    assert notas[0].categoria is None
+    assert notas[0].fuente == FuenteNota.MANUAL
+    assert "Aplicado: 1 fichero(s)" in capsys.readouterr().out

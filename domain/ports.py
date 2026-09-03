@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from .entities import Nota, RespuestaGenerada, SugerenciaClasificacion
+from .entities import Nota, NotaNormalizada, RespuestaGenerada, SugerenciaClasificacion
 
 # ---------- Puertos de salida: persistencia ----------
 
@@ -102,6 +102,19 @@ class ClasificadorNotas(ABC):
 
     @abstractmethod
     def clasificar(self, nota: Nota, categorias_existentes: list[str]) -> SugerenciaClasificacion: ...
+
+
+class NormalizadorVaultIn(ABC):
+    """Convierte el contenido crudo de un fichero de vault_in/ (sin
+    frontmatter, a veces aplanado por un copia-pega desde Telegram) en
+    una o varias NotaNormalizada listas para archivar en vault_out/ —
+    normalmente una, más de una solo si el texto mezclaba temas
+    realmente distintos que no deberían vivir en la misma nota. Lo usa
+    `adapters/in_/cli.py normalizar`, la versión automatizable (sin
+    Claude Code de por medio) de `/normalizar-vault-in`."""
+
+    @abstractmethod
+    def normalizar(self, texto_crudo: str) -> list[NotaNormalizada]: ...
 
 
 # ---------- Puertos de salida: extracción de texto ----------

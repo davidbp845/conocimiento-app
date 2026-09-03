@@ -24,13 +24,16 @@ intercambiables.
 > `domain/` (entidades, puertos, casos de uso, excepciones),
 > `config/` (schema + loader + `conocimiento.yaml` + `paths.py`),
 > `application/` (prompts), `adapters/out/` (`RepositorioNotasFilesystem`,
-> `GeneradorRespuestasAnthropic`/`ClasificadorNotasAnthropic`, y sus
-> equivalentes `*Mock`), `adapters/in_/` (`cli.py`, `telegram_bot.py`)
-> y `main.py` (composition root). 60 tests en `pytest` (ninguno
-> necesita red, API key ni un bot de Telegram real — los adaptadores
-> de salida se prueban mockeando el SDK correspondiente, mismo
-> criterio que `orquestador`) y `ruff check .` limpio. No probado
-> todavía: una conversación real con el bot de Telegram (hace falta un
+> `GeneradorRespuestasAnthropic`/`ClasificadorNotasAnthropic`/
+> `NormalizadorVaultInAnthropic`, y sus equivalentes `*Mock`),
+> `adapters/in_/` (`cli.py` — incluye `normalizar`, la versión
+> automatizable de `/normalizar-vault-in`, sin Claude Code de por
+> medio — y `telegram_bot.py`) y `main.py` (composition root). 113
+> tests en `pytest` (ninguno necesita red, API key ni un bot de
+> Telegram real — los adaptadores de salida se prueban mockeando el
+> SDK correspondiente, mismo criterio que `orquestador`) y
+> `ruff check .` limpio. No probado todavía: una conversación real con
+> el bot de Telegram (hace falta un
 > `TELEGRAM_BOT_TOKEN` real) ni el panel Streamlit abierto en un
 > navegador. `requirements.txt`/`requirements-dev.txt` reflejan las
 > dependencias reales ya usadas, no una lista provisional.
@@ -94,14 +97,16 @@ streamlit_app/    → panel con dos pestañas: Chat (pregunta -> LLM ->
                      y/o OPENAI_API_KEY según el proveedor elegido (o
                      PROVEEDOR_LLM=mock para probar sin ninguna); la
                      pestaña Buscar no necesita ninguna.
-vault_in/         → bandeja de entrada para .md pegados a mano (sin
-                     frontmatter, o con frontmatter incompleto). El
-                     comando `/normalizar-vault-in` (ver más abajo) les
-                     añade lo que falte y los traslada ya normalizados
-                     a vault_out/, plana (categoria: null, igual que
-                     ResponderYArchivar) — no hay adaptador todavía
-                     (ver "Estado actual"), así que por ahora es un
-                     comando de Claude Code, no `cli.py`. Viene vacía
+vault_in/         → bandeja de entrada para .md pegados a mano, o
+                     volcados por el bot de Telegram (ver "Bot de
+                     Telegram" más abajo): sin frontmatter, o con
+                     frontmatter incompleto. Dos formas de normalizarla
+                     a vault_out/ (plana, categoria: null, igual que
+                     ResponderYArchivar): `cli.py normalizar`
+                     (automatizable, sin Claude Code de por medio — ver
+                     "Comandos básicos") o `/normalizar-vault-in` desde
+                     una sesión de Claude Code (más lento, pero más
+                     cuidadoso: puede razonar caso a caso). Viene vacía
                      en este repo (ver vault_in/README.md).
 vault_out/        → las notas ya redactadas, el conocimiento en sí.
                      Empieza plana; el comando `reorganizar` es el
@@ -201,6 +206,13 @@ python -m adapters.in_.cli buscar --tag git --tag cli
 # Por defecto solo muestra el plan (dry-run).
 python -m adapters.in_.cli reorganizar
 python -m adapters.in_.cli reorganizar --aplicar
+
+# Normalizar vault_in/: cada .md pendiente -> una o varias notas en
+# vault_out/ (borra el original de vault_in/ solo con --aplicar). Es
+# lo que corre el timer systemd cada 10 min en producción (ver
+# despliegue), sin depender de Claude Code.
+python -m adapters.in_.cli normalizar
+python -m adapters.in_.cli normalizar --aplicar
 
 # Panel de visualización y búsqueda.
 streamlit run streamlit_app/app.py

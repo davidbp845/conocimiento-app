@@ -1,15 +1,24 @@
 import pytest
 
-from domain.entities import FuenteNota, Movimiento, Nota, RespuestaGenerada, SugerenciaClasificacion
+from domain.entities import FuenteNota, Movimiento, Nota, NotaNormalizada, RespuestaGenerada, SugerenciaClasificacion
 from domain.exceptions import ExtraccionTextoFallida, NotaNoExiste
-from domain.ports import ClasificadorNotas, ExtractorTexto, ExtractorTextoWeb, GeneradorRespuestas, RepositorioNotas
+from domain.ports import (
+    ClasificadorNotas,
+    ExtractorTexto,
+    ExtractorTextoWeb,
+    GeneradorRespuestas,
+    NormalizadorVaultIn,
+    RepositorioNotas,
+)
 from domain.use_cases import (
     PROFUNDIDAD_MAXIMA_CATEGORIA,
     UMBRAL_MINIMO_NOTAS_POR_CATEGORIA,
     AplicarReorganizacion,
     ArchivarNotaRedactada,
+    ArchivarNotasNormalizadas,
     BuscarNotas,
     EliminarNota,
+    NormalizarEntradaVault,
     PlanificarReorganizacion,
     ResponderYArchivar,
     ResumirYArchivarDocumento,
@@ -241,6 +250,37 @@ def test_resumir_y_archivar_pagina_web_propaga_extraccion_texto_fallida_sin_guar
         uc.ejecutar("https://example.com/caida", FuenteNota.STREAMLIT)
 
     assert repo.listar() == []
+
+
+class NormalizadorVaultInFake(NormalizadorVaultIn):
+    def __init__(self, resultado: list[NotaNormalizada]):
+        self._resultado = resultado
+
+    def normalizar(self, texto_crudo: str) -> list[NotaNormalizada]:
+        return self._resultado
+
+
+def test_normalizar_entrada_vault_delega_en_el_normalizador_sin_tocar_nada():
+    resultado = [NotaNormalizada(titulo="Título", contenido="cuerpo", tags=["git"])]
+
+    normalizadas = NormalizarEntradaVault(NormalizadorVaultInFake(resultado)).ejecutar("texto crudo")
+
+    assert normalizadas == resultado
+
+
+def test_archivar_notas_normalizadas_guarda_cada_una_plana_y_con_fuente_manual():
+    repo = RepositorioNotasFake()
+    normalizadas = [
+        NotaNormalizada(titulo="Primera", contenido="c1", tags=["git"], resumen="r1"),
+        NotaNormalizada(titulo="Segunda", contenido="c2", tags=["docker"], pregunta_origen="¿algo?"),
+    ]
+
+    archivadas = ArchivarNotasNormalizadas(repo).ejecutar(normalizadas)
+
+    assert [n.id for n in archivadas] == ["primera", "segunda"]
+    assert all(n.categoria is None and n.fuente == FuenteNota.MANUAL for n in archivadas)
+    assert repo.obtener("primera").resumen == "r1"
+    assert repo.obtener("segunda").pregunta_origen == "¿algo?"
 
 
 def test_buscar_notas_delega_en_el_repositorio():

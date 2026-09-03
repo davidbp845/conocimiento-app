@@ -2,7 +2,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from adapters.out.llm_anthropic import ClasificadorNotasAnthropic, GeneradorRespuestasAnthropic
+from adapters.out.llm_anthropic import (
+    ClasificadorNotasAnthropic,
+    GeneradorRespuestasAnthropic,
+    NormalizadorVaultInAnthropic,
+)
 from domain.entities import FuenteNota, Nota
 
 
@@ -134,3 +138,57 @@ def test_clasificador_llama_al_sdk_forzando_la_tool_clasificar_nota(monkeypatch)
 
     assert sugerencia.categoria == "git"
     assert sugerencia.tags == ["git"]
+
+
+def test_normalizador_llama_al_sdk_forzando_la_tool_publicar_notas_normalizadas(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    entrada = {
+        "notas": [
+            {
+                "titulo": "Título", "contenido": "cuerpo", "resumen": "resumen",
+                "tags": ["git"], "pregunta_origen": None,
+            },
+        ],
+    }
+    with patch("adapters.out.llm_anthropic.Anthropic") as mock_cls:
+        cliente = _cliente_falso([_BloqueToolUseFalso("publicar_notas_normalizadas", entrada)])
+        mock_cls.return_value = cliente
+
+        normalizadas = NormalizadorVaultInAnthropic(modelo="claude-x").normalizar("texto crudo")
+
+        cliente.messages.create.assert_called_once()
+        kwargs = cliente.messages.create.call_args.kwargs
+        assert kwargs["model"] == "claude-x"
+        assert kwargs["tool_choice"] == {"type": "tool", "name": "publicar_notas_normalizadas"}
+        assert kwargs["messages"] == [{"role": "user", "content": "texto crudo"}]
+
+    assert len(normalizadas) == 1
+    assert normalizadas[0].titulo == "Título"
+    assert normalizadas[0].tags == ["git"]
+    assert normalizadas[0].pregunta_origen is None
+
+
+def test_normalizador_puede_devolver_varias_notas(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    entrada = {
+        "notas": [
+            {"titulo": "Uno", "contenido": "c1", "resumen": "r1", "tags": ["git"], "pregunta_origen": None},
+            {"titulo": "Dos", "contenido": "c2", "resumen": "r2", "tags": ["docker"], "pregunta_origen": "¿?"},
+        ],
+    }
+    with patch("adapters.out.llm_anthropic.Anthropic") as mock_cls:
+        mock_cls.return_value = _cliente_falso(
+            [_BloqueToolUseFalso("publicar_notas_normalizadas", entrada)]
+        )
+        normalizadas = NormalizadorVaultInAnthropic().normalizar("texto con dos temas distintos")
+
+    assert [n.titulo for n in normalizadas] == ["Uno", "Dos"]
+    assert normalizadas[1].pregunta_origen == "¿?"
+
+
+def test_normalizador_sin_bloque_tool_use_lanza_value_error(monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "k")
+    with patch("adapters.out.llm_anthropic.Anthropic") as mock_cls:
+        mock_cls.return_value = _cliente_falso([])
+        with pytest.raises(ValueError, match="publicar_notas_normalizadas"):
+            NormalizadorVaultInAnthropic().normalizar("texto crudo")

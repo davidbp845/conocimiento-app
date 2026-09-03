@@ -9,9 +9,9 @@ import os
 
 from anthropic import Anthropic
 
-from application.prompts import PROMPT_GENERADOR, PROMPT_RESUMIDOR, prompt_clasificador
-from domain.entities import Nota, RespuestaGenerada, SugerenciaClasificacion
-from domain.ports import ClasificadorNotas, GeneradorRespuestas
+from application.prompts import PROMPT_GENERADOR, PROMPT_NORMALIZADOR, PROMPT_RESUMIDOR, prompt_clasificador
+from domain.entities import Nota, NotaNormalizada, RespuestaGenerada, SugerenciaClasificacion
+from domain.ports import ClasificadorNotas, GeneradorRespuestas, NormalizadorVaultIn
 
 _MODELO_DEFECTO = "claude-sonnet-5"
 
@@ -40,6 +40,36 @@ _HERRAMIENTA_CLASIFICACION = {
             "categoria": {"type": ["string", "null"]},
         },
         "required": ["tags", "categoria"],
+    },
+}
+
+
+_HERRAMIENTA_NORMALIZACION = {
+    "name": "publicar_notas_normalizadas",
+    "description": "Publica el resultado de normalizar un fichero crudo de vault_in en notas listas para archivar.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "notas": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "titulo": {"type": "string"},
+                        "contenido": {
+                            "type": "string",
+                            "description": "Cuerpo completo en Markdown, reformateado si el original venía aplanado.",
+                        },
+                        "resumen": {"type": "string"},
+                        "tags": {"type": "array", "items": {"type": "string"}},
+                        "pregunta_origen": {"type": ["string", "null"]},
+                    },
+                    "required": ["titulo", "contenido", "resumen", "tags", "pregunta_origen"],
+                },
+            },
+        },
+        "required": ["notas"],
     },
 }
 
@@ -120,3 +150,30 @@ class ClasificadorNotasAnthropic(ClasificadorNotas):
         )
         entrada = _entrada_de_tool_use(mensaje, "clasificar_nota")
         return SugerenciaClasificacion(tags=entrada.get("tags", []), categoria=entrada.get("categoria"))
+
+
+class NormalizadorVaultInAnthropic(NormalizadorVaultIn):
+    def __init__(self, modelo: str = _MODELO_DEFECTO, api_key: str | None = None):
+        self._client = Anthropic(api_key=api_key or os.environ["ANTHROPIC_API_KEY"])
+        self._modelo = modelo
+
+    def normalizar(self, texto_crudo: str) -> list[NotaNormalizada]:
+        mensaje = self._client.messages.create(
+            model=self._modelo,
+            max_tokens=8192,
+            system=PROMPT_NORMALIZADOR,
+            messages=[{"role": "user", "content": texto_crudo}],
+            tools=[_HERRAMIENTA_NORMALIZACION],
+            tool_choice={"type": "tool", "name": "publicar_notas_normalizadas"},
+        )
+        entrada = _entrada_de_tool_use(mensaje, "publicar_notas_normalizadas")
+        return [
+            NotaNormalizada(
+                titulo=nota["titulo"],
+                contenido=nota["contenido"],
+                tags=nota.get("tags", []),
+                resumen=nota.get("resumen"),
+                pregunta_origen=nota.get("pregunta_origen"),
+            )
+            for nota in entrada["notas"]
+        ]

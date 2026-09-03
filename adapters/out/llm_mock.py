@@ -1,13 +1,14 @@
-"""Implementaciones heurísticas de GeneradorRespuestas y
-ClasificadorNotas para desarrollar/probar sin gastar tokens ni
-necesitar ANTHROPIC_API_KEY (PROVEEDOR_LLM=mock, ver .env.example)."""
+"""Implementaciones heurísticas de GeneradorRespuestas,
+ClasificadorNotas y NormalizadorVaultIn para desarrollar/probar sin
+gastar tokens ni necesitar ANTHROPIC_API_KEY (PROVEEDOR_LLM=mock, ver
+.env.example)."""
 from __future__ import annotations
 
 import re
 from pathlib import Path
 
-from domain.entities import Nota, RespuestaGenerada, SugerenciaClasificacion
-from domain.ports import ClasificadorNotas, GeneradorRespuestas
+from domain.entities import Nota, NotaNormalizada, RespuestaGenerada, SugerenciaClasificacion
+from domain.ports import ClasificadorNotas, GeneradorRespuestas, NormalizadorVaultIn
 
 _PALABRA = re.compile(r"[a-záéíóúñ0-9]+", re.IGNORECASE)
 _PALABRAS_VACIAS = {
@@ -58,6 +59,31 @@ class ClasificadorNotasMock(ClasificadorNotas):
 
     def clasificar(self, nota: Nota, categorias_existentes: list[str]) -> SugerenciaClasificacion:
         return SugerenciaClasificacion(tags=nota.tags, categoria=None)
+
+
+class NormalizadorVaultInMock(NormalizadorVaultIn):
+    """No llama a ningún LLM ni reformatea nada: devuelve el texto tal
+    cual como una única nota, con título/tags heurísticos — nunca
+    detecta aplanado ni separa temas (eso exige de verdad entender el
+    contenido). Sirve para probar el resto del flujo de `normalizar`
+    (leer vault_in/, archivar, borrar el original) sin depender de la
+    red ni de una API key."""
+
+    def normalizar(self, texto_crudo: str) -> list[NotaNormalizada]:
+        primera_linea = next((linea.strip() for linea in texto_crudo.splitlines() if linea.strip()), "")
+        titulo = primera_linea.lstrip("#").strip().capitalize()[:80] or "Nota sin título"
+        return [
+            NotaNormalizada(
+                titulo=titulo,
+                contenido=(
+                    "> Normalización de PROVEEDOR_LLM=mock, sin reformatear el contenido real.\n\n"
+                    f"{texto_crudo}"
+                ),
+                tags=_palabras_clave(texto_crudo),
+                resumen="Nota de prueba generada por el proveedor mock.",
+                pregunta_origen=None,
+            )
+        ]
 
 
 def _palabras_clave(texto: str, maximo: int = 3) -> list[str]:

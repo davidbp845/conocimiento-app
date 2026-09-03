@@ -93,6 +93,22 @@ class RespuestaGenerada:
 
 
 @dataclass
+class NotaNormalizada:
+    """Lo que devuelve NormalizadorVaultIn a partir del contenido crudo
+    de un fichero de vault_in/: una posible nota, todavía sin id (lo
+    decide Nota.nueva()) ni categoria (siempre None hasta que
+    "reorganizar" la asigne, igual que el resto de fuentes de
+    entrada). pregunta_origen puede ser una reconstrucción del propio
+    normalizador, nunca la pregunta real tecleada por nadie — ver
+    application/prompts.py:PROMPT_NORMALIZADOR."""
+    titulo: str
+    contenido: str
+    tags: list[str] = field(default_factory=list)
+    resumen: str | None = None
+    pregunta_origen: str | None = None
+
+
+@dataclass
 class SugerenciaClasificacion:
     """Lo que devuelve ClasificadorNotas para una nota ya existente:
     tags definitivas y la carpeta donde debería vivir dentro de

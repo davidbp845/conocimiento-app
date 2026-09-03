@@ -18,7 +18,9 @@ from config.paths import home
 from domain.use_cases import (
     AplicarReorganizacion,
     ArchivarNotaRedactada,
+    ArchivarNotasNormalizadas,
     BuscarNotas,
+    NormalizarEntradaVault,
     PlanificarReorganizacion,
 )
 
@@ -31,6 +33,10 @@ def _proveedor_llm() -> str:
 
 def _repositorio() -> RepositorioNotasFilesystem:
     return RepositorioNotasFilesystem(os.environ.get("VAULT_OUT_PATH", str(home() / "vault_out")))
+
+
+def _vault_in() -> Path:
+    return Path(os.environ.get("VAULT_IN_PATH", str(home() / "vault_in")))
 
 
 def _generador():
@@ -83,6 +89,40 @@ def _cmd_buscar(args: argparse.Namespace) -> None:
             print(f"    {nota.resumen}")
 
 
+def _normalizador():
+    if _proveedor_llm() == "mock":
+        from adapters.out.llm_mock import NormalizadorVaultInMock
+        return NormalizadorVaultInMock()
+    from adapters.out.llm_anthropic import NormalizadorVaultInAnthropic
+    return NormalizadorVaultInAnthropic()
+
+
+def _cmd_normalizar(args: argparse.Namespace) -> None:
+    ficheros = sorted(p for p in _vault_in().glob("*.md") if p.name.lower() != "readme.md")
+    if not ficheros:
+        print("vault_in/ no tiene ficheros pendientes.")
+        return
+
+    normalizador = _normalizador()
+    repo = _repositorio()
+    total_notas = 0
+
+    for ruta in ficheros:
+        normalizadas = NormalizarEntradaVault(normalizador).ejecutar(ruta.read_text(encoding="utf-8"))
+        for nota in normalizadas:
+            print(f"{ruta.name} -> \"{nota.titulo}\" (tags={nota.tags})")
+        total_notas += len(normalizadas)
+
+        if args.aplicar:
+            ArchivarNotasNormalizadas(repo).ejecutar(normalizadas)
+            ruta.unlink()
+
+    if args.aplicar:
+        print(f"\nAplicado: {len(ficheros)} fichero(s) de vault_in/ -> {total_notas} nota(s) en vault_out/.")
+    else:
+        print("\n(simulación: pasa --aplicar para ejecutar este plan)")
+
+
 def _cmd_reorganizar(args: argparse.Namespace) -> None:
     repo = _repositorio()
     plan = PlanificarReorganizacion(repo, _clasificador()).ejecutar()
@@ -121,6 +161,12 @@ def _construir_parser() -> argparse.ArgumentParser:
     )
     p_reorganizar.add_argument("--aplicar", action="store_true")
     p_reorganizar.set_defaults(func=_cmd_reorganizar)
+
+    p_normalizar = subparsers.add_parser(
+        "normalizar", help="Calcula (y con --aplicar, ejecuta) el volcado de vault_in/ a vault_out/"
+    )
+    p_normalizar.add_argument("--aplicar", action="store_true")
+    p_normalizar.set_defaults(func=_cmd_normalizar)
 
     return parser
 

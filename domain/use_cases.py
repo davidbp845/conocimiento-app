@@ -6,8 +6,15 @@ vault_out). Esto es lo que invocan los adaptadores de entrada
 """
 from __future__ import annotations
 
-from .entities import FuenteNota, Movimiento, Nota
-from .ports import ClasificadorNotas, ExtractorTexto, ExtractorTextoWeb, GeneradorRespuestas, RepositorioNotas
+from .entities import FuenteNota, Movimiento, Nota, NotaNormalizada
+from .ports import (
+    ClasificadorNotas,
+    ExtractorTexto,
+    ExtractorTextoWeb,
+    GeneradorRespuestas,
+    NormalizadorVaultIn,
+    RepositorioNotas,
+)
 
 # Nº mínimo de notas afines que debe reunir una categoría nueva antes de
 # crearla — regla 2 de "Crecimiento del árbol" en README.md. Evita ramas
@@ -133,6 +140,48 @@ class ResumirYArchivarPaginaWeb:
         )
         self._notas.guardar(nota)
         return nota
+
+
+class NormalizarEntradaVault:
+    """Calcula (sin tocar vault_out/ ni borrar nada) en qué nota(s)
+    debería convertirse el contenido crudo de un fichero de vault_in/
+    — dry-run de `normalizar` (mismo patrón que
+    PlanificarReorganizacion/AplicarReorganizacion: separar "calcular"
+    de "aplicar" es lo que permite el dry-run por defecto)."""
+
+    def __init__(self, normalizador: NormalizadorVaultIn):
+        self._normalizador = normalizador
+
+    def ejecutar(self, texto_crudo: str) -> list[NotaNormalizada]:
+        return self._normalizador.normalizar(texto_crudo)
+
+
+class ArchivarNotasNormalizadas:
+    """Aplica un resultado ya calculado por NormalizarEntradaVault:
+    archiva cada NotaNormalizada como Nota nueva y plana en vault_out/
+    (fuente=MANUAL, categoria=None — nunca decide categoria, igual que
+    el resto de fuentes de entrada; eso es trabajo exclusivo de
+    `reorganizar`). No borra el fichero de vault_in/ que la originó —
+    eso lo hace el adaptador que orquesta ambos pasos, solo si esta
+    llamada no lanza ninguna excepción."""
+
+    def __init__(self, notas: RepositorioNotas):
+        self._notas = notas
+
+    def ejecutar(self, normalizadas: list[NotaNormalizada]) -> list[Nota]:
+        archivadas = []
+        for normalizada in normalizadas:
+            nota = Nota.nueva(
+                titulo=normalizada.titulo,
+                contenido=normalizada.contenido,
+                fuente=FuenteNota.MANUAL,
+                tags=normalizada.tags,
+                pregunta_origen=normalizada.pregunta_origen,
+                resumen=normalizada.resumen,
+            )
+            self._notas.guardar(nota)
+            archivadas.append(nota)
+        return archivadas
 
 
 class BuscarNotas:

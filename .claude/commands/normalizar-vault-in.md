@@ -5,10 +5,12 @@ argument-hint: [--aplicar — opcional, si no se da es solo simulación]
 
 Normaliza los `.md` pegados a mano en `vault_in/` (ver "vault_in/" en
 `README.md` raíz y `vault_in/README.md`) y los traslada a `vault_out/`
-con el frontmatter completo. No hay adaptador ni caso de uso de
-dominio para esto todavía (ver "Estado actual" en README.md), así que
-aplica la lógica a mano, igual que ya hacen `/guardar-respuesta` y
-`/reorganizar-vault`.
+con el frontmatter completo. Existe también `cli.py normalizar`
+(`adapters/in_/cli.py`), automatizable sin Claude Code de por medio —
+usa este comando en su lugar cuando quieras el razonamiento caso a
+caso descrito abajo (fusionar turnos duplicados, separar temas
+mezclados, reconstruir diagramas ASCII rotos) en vez de una única
+llamada al LLM.
 
 1. Lista los `.md` de `vault_in/` (recursivo). Ignora cualquier
    `README.md` — es documentación de la carpeta, no una nota.
