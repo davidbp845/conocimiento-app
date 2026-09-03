@@ -46,6 +46,7 @@ def main() -> None:
     app = crear_aplicacion(
         token,
         construir_sistema(),
+        vault_in=os.environ.get("VAULT_IN_PATH", str(home() / "vault_in")),
         chat_id_permitido=os.environ.get("TELEGRAM_CHAT_ID_PERMITIDO"),
     )
     logger.info("Bot de Telegram arrancado (polling).")

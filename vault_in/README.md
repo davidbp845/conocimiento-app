@@ -1,9 +1,10 @@
 # vault_in
 
-Bandeja de entrada para `.md` pegados a mano: sin frontmatter, o con
-frontmatter incompleto (falta `titulo`, `resumen`, `tags`, `fecha`...).
-No es donde vive el conocimiento ya archivado — para eso está
-`vault_out/`.
+Bandeja de entrada para `.md` pegados a mano, o volcados por el bot de
+Telegram (`/iniciar`+`/finalizar`, ver "Bot de Telegram" en el README
+raíz — ficheros `telegram-*.md`): sin frontmatter, o con frontmatter
+incompleto (falta `titulo`, `resumen`, `tags`, `fecha`...). No es donde
+vive el conocimiento ya archivado — para eso está `vault_out/`.
 
 El comando `/normalizar-vault-in` (`.claude/commands/`) recorre esta
 carpeta, completa en cada fichero lo que le falte según el formato

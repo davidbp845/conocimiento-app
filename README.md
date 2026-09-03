@@ -65,7 +65,9 @@ application/      → prompts.py: el texto de los prompts (estilo
                      al LLM por caso de uso (sin bucle de tools),
                      domain/use_cases.py ya es esa coordinación.
 adapters/in_/     → entradas: bot de Telegram (preguntar desde
-                     cualquier sitio) y CLI (comandos de terminal:
+                     cualquier sitio, o capturar una conversación
+                     entera con /iniciar-/finalizar — ver "Bot de
+                     Telegram" más abajo) y CLI (comandos de terminal:
                      guardar, buscar, reorganizar — ver más abajo).
 adapters/out/     → salidas: LLM (Anthropic, o un mock para
                      desarrollar sin gastar tokens), y el repositorio
@@ -209,6 +211,30 @@ pytest
 pytest tests/01_domain   # una sola capa
 ruff check .
 ```
+
+## Bot de Telegram
+
+Dos formas de usarlo (`adapters/in_/telegram_bot.py`), sin mezclarse
+entre sí:
+
+- **Pregunta suelta**: cualquier mensaje de texto normal se trata como
+  pregunta → el LLM genera una respuesta tipo tutorial → se archiva
+  directa en `vault_out/` (`fuente: telegram`), igual que siempre.
+- **Conversación capturada**: `/iniciar` empieza a acumular en memoria
+  (sin llamar al LLM, sin responder más que un `✓` por mensaje) todo lo
+  que escribas a continuación; `/finalizar` vuelca esos mensajes,
+  en orden y separados por párrafo, como un único `.md` nuevo en
+  `vault_in/` (`telegram-AAAA-MM-DD-HHMMSS-ffffff.md`, sin
+  frontmatter) — pendiente de que lo recoja `/normalizar-vault-in`.
+  Útil para pegar/dictar por partes una conversación larga de otra IA,
+  o varias ideas sueltas, sin que cada mensaje individual dispare una
+  respuesta y una nota aparte.
+
+`/iniciar` dos veces seguidas no reinicia ni pierde lo ya acumulado; ni
+esa conversación en curso ni sus mensajes se persisten a disco hasta
+`/finalizar` — si el proceso se reinicia a media captura, se pierde a
+propósito (mejor eso que volcar a `vault_in/` una conversación a
+medias sin que nadie lo haya pedido).
 
 ## Cómo sustituir un adaptador
 
