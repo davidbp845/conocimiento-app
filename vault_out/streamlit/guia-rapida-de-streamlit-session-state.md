@@ -1,7 +1,7 @@
 ---
 titulo: "Guía rápida de st.session_state en Streamlit"
 tags: [streamlit, python]
-categoria: null
+categoria: streamlit
 fuente: claude_code
 pregunta_origen: "en streamlit cada interacción relanza el script entero — ¿cómo guardo un valor entre una interacción y la siguiente?"
 resumen: "st.session_state es un dict que sobrevive a los reruns dentro de la misma sesión de navegador; inicializa cada clave con `if clave not in st.session_state` antes de leerla."
@@ -43,3 +43,7 @@ Reglas prácticas:
   reusado como una conexión, no como datos mutables por usuario).
 - Se resetea si se recarga la página desde cero (F5) — solo sobrevive
   a los reruns que Streamlit dispara internamente por interacción.
+
+## Ver también
+
+- [[como-evitar-el-parpadeo-de-la-interfaz-en-streamlit]]

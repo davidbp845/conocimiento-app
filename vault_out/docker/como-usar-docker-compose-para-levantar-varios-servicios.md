@@ -1,7 +1,7 @@
 ---
 titulo: "Cómo usar docker compose para levantar varios servicios"
 tags: [docker, cli]
-categoria: null
+categoria: docker
 fuente: claude_code
 pregunta_origen: "tengo una app con backend, base de datos y un worker — ¿cómo lo levanto todo junto sin arrancar cada contenedor a mano?"
 resumen: "un docker-compose.yml declara los servicios y sus dependencias; `docker compose up` los levanta todos con una red y volúmenes compartidos."
@@ -61,3 +61,7 @@ Puntos que suelen sorprender:
   vez, hace falta un healthcheck o reintentos en el propio backend.
 - Los volúmenes con nombre (`datos_db`) sobreviven a `docker compose
   down`; solo desaparecen con `-v` o `docker volume rm` explícito.
+
+## Ver también
+
+- [[diferencia-entre-dockerfile-y-docker-compose]]

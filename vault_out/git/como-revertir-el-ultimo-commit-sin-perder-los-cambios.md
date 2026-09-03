@@ -33,3 +33,8 @@ Variantes según qué quieras conservar:
 Si el commit ya se ha subido a un remoto compartido, `reset` reescribe
 historial — mejor `git revert HEAD`, que crea un commit nuevo que
 deshace el anterior sin tocar los que ya existen.
+
+## Ver también
+
+- [[como-guardar-cambios-a-medias-con-git-stash]]
+- [[como-resolver-un-conflicto-de-merge-en-git]]

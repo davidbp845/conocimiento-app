@@ -33,3 +33,7 @@ Regla práctica: `rebase` para limpiar tu propia rama de feature antes
 de abrir un PR (historial lineal, fácil de revisar); `merge` para
 integrar esa rama ya terminada en `main` (conserva el punto exacto de
 integración, y no reescribe nada compartido).
+
+## Ver también
+
+- [[como-resolver-un-conflicto-de-merge-en-git]]
