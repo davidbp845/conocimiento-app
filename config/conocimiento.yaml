@@ -4,8 +4,14 @@
 
 arbol:
   # Nº mínimo de notas afines para crear una carpeta nueva en vault_out/
-  # (regla 2 de "Crecimiento del árbol" en README.md).
-  umbral_minimo_notas_por_categoria: 5
+  # (regla 2 de "Crecimiento del árbol" en README.md). El valor por
+  # defecto del schema (config/schema.py) es 5 — aquí se baja a 2
+  # solo para que las categorías de vault_out/ de este repo (git,
+  # docker, streamlit, claude-code: 2-4 notas cada una) sean
+  # exactamente lo que `reorganizar --aplicar` produciría sobre esas
+  # notas ya clasificadas, no una simulación a mano. Un vault real
+  # debería volver al 5 por defecto (basta con borrar esta línea).
+  umbral_minimo_notas_por_categoria: 2
   # Niveles máximos de profundidad de una categoria, p.ej. "git/commits" = 2
   # (regla 4 de "Crecimiento del árbol" en README.md).
   profundidad_maxima_categoria: 2

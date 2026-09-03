@@ -6,8 +6,12 @@ from config.loader import cargar_config
 
 
 def test_cargar_config_lee_el_yaml_del_proyecto():
+    # umbral_minimo_notas_por_categoria a 2 (no el default de 5 del
+    # schema): este repo lo baja a propósito para que vault_out/ de
+    # ejemplo sea reproducible con `reorganizar --aplicar` (ver el
+    # comentario en config/conocimiento.yaml).
     cfg = cargar_config("config/conocimiento.yaml")
-    assert cfg.arbol.umbral_minimo_notas_por_categoria == 5
+    assert cfg.arbol.umbral_minimo_notas_por_categoria == 2
     assert cfg.arbol.profundidad_maxima_categoria == 2
 
 

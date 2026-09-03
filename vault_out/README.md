@@ -22,11 +22,12 @@ Al principio todas las notas se guardan planas en esta misma carpeta
 (sin subcarpetas). El comando `reorganizar` (ver README raíz) es el
 único mecanismo que crea subcarpetas y mueve notas dentro de ellas,
 siguiendo las reglas de crecimiento armonioso descritas allí — las
-carpetas de este repo simulan el resultado de esa reorganización ya
-aplicada (en un vault real haría falta alcanzar antes el umbral
-mínimo de notas afines por categoría; aquí se ha priorizado que cada
-categoría tenga un tamaño legible para el ejemplo). No muevas ni
-reclasifiques notas a mano si puedes evitarlo: así el árbol siempre
+carpetas de este repo no son una simulación a mano: son exactamente lo
+que `reorganizar --aplicar` produce sobre estas notas ya clasificadas,
+con el umbral mínimo de `config/conocimiento.yaml` bajado a 2 (en vez
+del 5 por defecto) para que un ejemplo de este tamaño sea reproducible
+de verdad — un vault real debería mantener el 5 por defecto. No muevas
+ni reclasifiques notas a mano si puedes evitarlo: así el árbol siempre
 refleja una única fuente de verdad (el comando), y no dos criterios
 distintos mezclados.
 

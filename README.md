@@ -152,7 +152,10 @@ para que el árbol crezca de forma armoniosa:
    duplicar la nota.
 2. **No se crea una subcarpeta hasta que hay contenido suficiente que
    la justifique** (umbral configurable en `config/`, por defecto unas
-   5 notas afines). Evita ramas con uno o dos archivos.
+   5 notas afines — `config/conocimiento.yaml` de este repo lo baja a
+   2 solo para que el `vault_out/` de ejemplo sea reproducible con
+   `reorganizar --aplicar`; un vault real debería mantener el 5).
+   Evita ramas con uno o dos archivos.
 3. **Se prioriza ampliar/reusar una carpeta existente** sobre crear una
    nueva, si el tema encaja razonablemente.
 4. **Profundidad máxima limitada** (por defecto 2 niveles) para que el
