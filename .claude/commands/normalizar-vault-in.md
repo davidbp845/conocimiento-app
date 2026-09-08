@@ -116,7 +116,13 @@ llamada al LLM.
    - `resumen`: si falta, una frase que resuma el contenido.
    - `tags`: si faltan o están vacías, entre 2 y 4 tags en minúsculas
      que reflejen el tema, con el mismo estilo que las notas ya
-     archivadas en `vault_out/`.
+     archivadas en `vault_out/`. Antes de fijar cada tag, compáralo
+     (normalizando: minúsculas, sin acentos, sin guiones/espacios) con
+     los tags que ya existen en `vault_out/` — si ya hay una forma
+     equivalente (p. ej. ya existe `ci-cd` y ibas a escribir `cicd`),
+     reutilízala tal cual en vez de crear una variante nueva. Esto no
+     sustituye a `/fusionar-tags`, que limpia los duplicados que ya se
+     hubieran colado antes de esta nota.
    - `pregunta_origen`: si falta:
      - Si el cuerpo es claramente la respuesta directa de una IA a una
        pregunta que no aparece en el texto (empieza con "Sí.", "Claro,",

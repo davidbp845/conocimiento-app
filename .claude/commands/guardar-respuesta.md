@@ -18,5 +18,11 @@ Archiva como nota de `vault_out/` la respuesta tipo tutorial/procedimiento más 
    fecha: AAAA-MM-DD        # fecha de hoy
    ```
    seguido del cuerpo Markdown de la respuesta (limpio: sin las partes conversacionales tipo "claro, aquí tienes", directo al contenido).
+
+   Para `tags`: antes de fijar cada uno, compáralo (normalizando:
+   minúsculas, sin acentos, sin guiones/espacios) con los tags que ya
+   existen en `vault_out/` — si ya hay una forma equivalente (p. ej.
+   ya existe `heruka-flow` y ibas a escribir `herukaflow`), reutilízala
+   tal cual en vez de crear una variante nueva.
 4. No la muevas a ninguna subcarpeta ni inventes una `categoria` — eso es trabajo exclusivo de `/reorganizar-vault`, no de este comando (regla 1 de "Crecimiento del árbol" en README.md: una sola fuente de verdad para dónde vive cada nota).
 5. Confirma con la ruta del fichero creado y el resumen de una línea.

@@ -283,6 +283,13 @@ datos).
   fragmentos en los que la IA repite una respuesta anterior ya
   retocada con un dato nuevo del usuario, antes de archivarlos.
   Dry-run por defecto, igual que `/reorganizar-vault`.
+- `/fusionar-tags [--aplicar]` — detecta tags de `vault_out/` que son
+  la misma etiqueta escrita distinto (`ci-cd`/`cicd`,
+  `heruka-flow`/`herukaflow`) y fusiona cada grupo en una única forma
+  canónica. `/normalizar-vault-in` y `/guardar-respuesta` ya comprueban
+  esto al crear tags nuevos; este comando limpia los duplicados que se
+  hubieran colado antes de esa comprobación. Dry-run por defecto, igual
+  que `/reorganizar-vault`.
 - `/siguiente-pieza [pieza]` — continúa implementando/refinando *este
   motor* capa a capa, siguiendo el orden y el estilo ya establecidos.
   Comando de desarrollo del propio `conocimiento_app`, no de uso diario
