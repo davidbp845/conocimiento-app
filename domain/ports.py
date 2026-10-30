@@ -73,6 +73,24 @@ class RepositorioNotas(ABC):
         ...
 
 
+class BuscadorSemantico(ABC):
+    """Ordena notas por parecido de significado con una consulta, para
+    que «deshacer commit» encuentre «Cómo revertir el último commit»
+    aunque no compartan palabras. La implementación prevista es de
+    embeddings locales (adapters/out/buscador_semantico_embeddings.py),
+    pero el dominio no lo sabe. Opcional: sin él, BuscarNotas usa solo
+    la búsqueda literal de RepositorioNotas.buscar."""
+
+    @abstractmethod
+    def buscar(self, consulta: str, notas: list[Nota]) -> list[tuple[str, float]]:
+        """(id, puntuación) de las notas de `notas` que superan el
+        umbral de relevancia, de mayor a menor puntuación. El umbral lo
+        fija la implementación porque depende del modelo. `notas` son
+        todas las del vault, sin filtrar: una implementación con índice
+        puede dar por borrada cualquier nota que no esté."""
+        ...
+
+
 # ---------- Puertos de salida: IA ----------
 
 class GeneradorRespuestas(ABC):

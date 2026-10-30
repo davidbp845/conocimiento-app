@@ -1,0 +1,6 @@
+# Opcional: búsqueda semántica de notas (adapters/out/buscador_semantico_embeddings.py).
+# Aparte de requirements.txt porque arrastra torch (cientos de MB). Sin
+# instalarla, `buscar` y la pestaña Buscar usan solo la búsqueda literal.
+# Probado con: sentence-transformers 5.x.
+
+sentence-transformers

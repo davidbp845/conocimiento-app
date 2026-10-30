@@ -53,9 +53,24 @@ st.set_page_config(page_title="Conocimiento", layout="centered")
 # nada — el problema es el <style> inyectado en sí, no lo que hace.
 
 
+def _vault_out() -> str:
+    return os.environ.get("VAULT_OUT_PATH", str(home() / "vault_out"))
+
+
 @st.cache_resource
 def _repositorio() -> RepositorioNotasFilesystem:
-    return RepositorioNotasFilesystem(os.environ.get("VAULT_OUT_PATH", str(home() / "vault_out")))
+    return RepositorioNotasFilesystem(_vault_out())
+
+
+@st.cache_resource
+def _buscador_semantico():
+    # Cacheado para cargar el modelo de embeddings una vez por proceso,
+    # no en cada rerun. None (búsqueda solo literal) con mock o sin
+    # sentence-transformers instalado.
+    if os.environ.get("PROVEEDOR_LLM", "anthropic") == "mock":
+        return None
+    from adapters.out.buscador_semantico_embeddings import crear_buscador_semantico
+    return crear_buscador_semantico(_vault_out())
 
 
 def _generador(proveedor: str):
@@ -207,17 +222,21 @@ with tab_buscar:
     texto = col_texto.text_input("Buscar", "")
     tag = col_tag.text_input("Tag", "")
 
-    notas = BuscarNotas(_repositorio()).ejecutar(
+    notas = BuscarNotas(_repositorio(), _buscador_semantico()).ejecutar(
         texto=texto or None,
         tags=[tag] if tag else None,
     )
+    # Con texto, BuscarNotas ya las devuelve por relevancia; sin él,
+    # las más recientes primero.
+    if not texto:
+        notas = sorted(notas, key=lambda n: n.creado_en, reverse=True)
 
     st.caption(f"{len(notas)} nota(s)")
 
     if "confirmar_eliminar" not in st.session_state:
         st.session_state.confirmar_eliminar = None
 
-    for nota in sorted(notas, key=lambda n: n.creado_en, reverse=True):
+    for nota in notas:
         ruta = f"{nota.categoria}/{nota.id}" if nota.categoria else nota.id
         with st.expander(f"{nota.titulo}  ·  {ruta}"):
             if nota.resumen:

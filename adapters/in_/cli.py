@@ -31,8 +31,12 @@ def _proveedor_llm() -> str:
     return os.environ.get("PROVEEDOR_LLM", "anthropic")
 
 
+def _vault_out() -> str:
+    return os.environ.get("VAULT_OUT_PATH", str(home() / "vault_out"))
+
+
 def _repositorio() -> RepositorioNotasFilesystem:
-    return RepositorioNotasFilesystem(os.environ.get("VAULT_OUT_PATH", str(home() / "vault_out")))
+    return RepositorioNotasFilesystem(_vault_out())
 
 
 def _vault_in() -> Path:
@@ -77,8 +81,16 @@ def _cmd_guardar(args: argparse.Namespace) -> None:
     print(f"Guardada: vault_out/{nota.id}.md")
 
 
+def _buscador_semantico():
+    # Con mock, como el LLM: los tests no descargan el modelo.
+    if _proveedor_llm() == "mock":
+        return None
+    from adapters.out.buscador_semantico_embeddings import crear_buscador_semantico
+    return crear_buscador_semantico(_vault_out())
+
+
 def _cmd_buscar(args: argparse.Namespace) -> None:
-    notas = BuscarNotas(_repositorio()).ejecutar(texto=args.texto, tags=args.tag)
+    notas = BuscarNotas(_repositorio(), _buscador_semantico()).ejecutar(texto=args.texto, tags=args.tag)
     if not notas:
         print("Sin resultados.")
         return
@@ -151,7 +163,9 @@ def _construir_parser() -> argparse.ArgumentParser:
     origen.add_argument("--stdin", action="store_true", help="Lee el markdown de la entrada estándar")
     p_guardar.set_defaults(func=_cmd_guardar)
 
-    p_buscar = subparsers.add_parser("buscar", help="Busca notas por texto y/o tag")
+    p_buscar = subparsers.add_parser(
+        "buscar", help="Busca notas por texto (por significado si hay búsqueda semántica) y/o tag"
+    )
     p_buscar.add_argument("texto", nargs="?", default=None)
     p_buscar.add_argument("--tag", action="append", help="Repetible: --tag git --tag cli")
     p_buscar.set_defaults(func=_cmd_buscar)

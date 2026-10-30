@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from .entities import FuenteNota, Movimiento, Nota, NotaNormalizada
 from .ports import (
+    BuscadorSemantico,
     ClasificadorNotas,
     ExtractorTexto,
     ExtractorTextoWeb,
@@ -185,17 +186,34 @@ class ArchivarNotasNormalizadas:
 
 
 class BuscarNotas:
-    """Delega en RepositorioNotas.buscar. Lo usan tanto
-    `adapters/in_/cli.py buscar` como el panel Streamlit — sin lógica
-    de dominio propia más allá de la ya descrita en el puerto (ver
-    domain/ports.py), para que ambos consumidores busquen siempre
-    igual."""
+    """Busca en RepositorioNotas por texto y/o tags. Lo usan tanto
+    `adapters/in_/cli.py buscar` como el panel Streamlit, para que
+    ambos consumidores busquen siempre igual.
 
-    def __init__(self, notas: RepositorioNotas):
+    Con buscador semántico y texto, el resultado va ordenado por
+    relevancia: primero las notas que el buscador da por parecidas
+    y pasan el filtro de tags, después las que solo
+    coinciden literalmente — una coincidencia literal no se pierde
+    aunque el modelo no la puntúe alto. Sin buscador, delega tal cual
+    en RepositorioNotas.buscar."""
+
+    def __init__(self, notas: RepositorioNotas, buscador: BuscadorSemantico | None = None):
         self._notas = notas
+        self._buscador = buscador
 
     def ejecutar(self, texto: str | None = None, tags: list[str] | None = None) -> list[Nota]:
-        return self._notas.buscar(texto=texto, tags=tags)
+        if not texto or self._buscador is None:
+            return self._notas.buscar(texto=texto, tags=tags)
+
+        # El buscador recibe todas las notas, no solo las que pasan el
+        # filtro de tags, para que su índice sepa también cuáles ya no
+        # existen.
+        por_id = {n.id: n for n in self._notas.buscar(tags=tags)}
+        ranking = self._buscador.buscar(texto, self._notas.listar())
+        resultado = [por_id[nota_id] for nota_id, _ in ranking if nota_id in por_id]
+        ya_incluidas = {n.id for n in resultado}
+        resultado.extend(n for n in self._notas.buscar(texto=texto, tags=tags) if n.id not in ya_incluidas)
+        return resultado
 
 
 class EliminarNota:

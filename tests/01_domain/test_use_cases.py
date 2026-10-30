@@ -3,6 +3,7 @@ import pytest
 from domain.entities import FuenteNota, Movimiento, Nota, NotaNormalizada, RespuestaGenerada, SugerenciaClasificacion
 from domain.exceptions import ExtraccionTextoFallida, NotaNoExiste
 from domain.ports import (
+    BuscadorSemantico,
     ClasificadorNotas,
     ExtractorTexto,
     ExtractorTextoWeb,
@@ -291,6 +292,76 @@ def test_buscar_notas_delega_en_el_repositorio():
     resultado = BuscarNotas(repo).ejecutar(tags=["git"])
 
     assert [n.id for n in resultado] == ["sobre-git"]
+
+
+class BuscadorSemanticoFake(BuscadorSemantico):
+    """Devuelve una puntuación fija por id, como si el modelo ya
+    hubiera decidido qué notas se parecen a la consulta."""
+
+    def __init__(self, puntuaciones: dict[str, float]):
+        self._puntuaciones = puntuaciones
+        self.candidatas_recibidas: list[str] = []
+
+    def buscar(self, consulta: str, notas: list[Nota]) -> list[tuple[str, float]]:
+        self.candidatas_recibidas = [n.id for n in notas]
+        relevantes = [(n.id, self._puntuaciones[n.id]) for n in notas if n.id in self._puntuaciones]
+        return sorted(relevantes, key=lambda par: par[1], reverse=True)
+
+
+def test_buscar_notas_con_buscador_semantico_ordena_por_relevancia():
+    repo = RepositorioNotasFake()
+    repo.guardar(Nota.nueva("Revertir el último commit", "git revert HEAD", FuenteNota.CLI))
+    repo.guardar(Nota.nueva("Reescribir historial", "git rebase -i", FuenteNota.CLI))
+    repo.guardar(Nota.nueva("Instalar docker", "apt install", FuenteNota.CLI))
+    buscador = BuscadorSemanticoFake({"reescribir-historial": 0.6, "revertir-el-ultimo-commit": 0.9})
+
+    resultado = BuscarNotas(repo, buscador).ejecutar(texto="deshacer commit")
+
+    assert [n.id for n in resultado] == ["revertir-el-ultimo-commit", "reescribir-historial"]
+
+
+def test_buscar_notas_con_buscador_semantico_conserva_las_coincidencias_literales():
+    repo = RepositorioNotasFake()
+    repo.guardar(Nota.nueva("Revertir el último commit", "git revert HEAD", FuenteNota.CLI))
+    repo.guardar(Nota.nueva("Chuleta de docker", "docker ps", FuenteNota.CLI))
+    buscador = BuscadorSemanticoFake({"revertir-el-ultimo-commit": 0.7})
+
+    resultado = BuscarNotas(repo, buscador).ejecutar(texto="docker")
+
+    assert [n.id for n in resultado] == ["revertir-el-ultimo-commit", "chuleta-de-docker"]
+
+
+def test_buscar_notas_con_buscador_semantico_respeta_el_filtro_de_tags():
+    repo = RepositorioNotasFake()
+    repo.guardar(Nota.nueva("Revertir commit", "c", FuenteNota.CLI, tags=["git"]))
+    repo.guardar(Nota.nueva("Revertir contenedor", "c", FuenteNota.CLI, tags=["docker"]))
+    buscador = BuscadorSemanticoFake({"revertir-commit": 0.8, "revertir-contenedor": 0.9})
+
+    resultado = BuscarNotas(repo, buscador).ejecutar(texto="deshacer", tags=["git"])
+
+    assert [n.id for n in resultado] == ["revertir-commit"]
+
+
+def test_buscar_notas_pasa_al_buscador_semantico_todas_las_notas_aunque_filtre_por_tags():
+    repo = RepositorioNotasFake()
+    repo.guardar(Nota.nueva("Revertir commit", "c", FuenteNota.CLI, tags=["git"]))
+    repo.guardar(Nota.nueva("Revertir contenedor", "c", FuenteNota.CLI, tags=["docker"]))
+    buscador = BuscadorSemanticoFake({})
+
+    BuscarNotas(repo, buscador).ejecutar(texto="deshacer", tags=["git"])
+
+    assert buscador.candidatas_recibidas == ["revertir-commit", "revertir-contenedor"]
+
+
+def test_buscar_notas_sin_texto_no_usa_el_buscador_semantico():
+    repo = RepositorioNotasFake()
+    repo.guardar(Nota.nueva("Sobre git", "c", FuenteNota.CLI))
+    buscador = BuscadorSemanticoFake({})
+
+    resultado = BuscarNotas(repo, buscador).ejecutar()
+
+    assert [n.id for n in resultado] == ["sobre-git"]
+    assert buscador.candidatas_recibidas == []
 
 
 def test_eliminar_nota_delega_en_el_repositorio():
