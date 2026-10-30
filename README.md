@@ -25,10 +25,11 @@ intercambiables.
 > `config/` (schema + loader + `conocimiento.yaml` + `paths.py`),
 > `application/` (prompts), `adapters/out/` (`RepositorioNotasFilesystem`,
 > `GeneradorRespuestasAnthropic`/`ClasificadorNotasAnthropic`/
-> `NormalizadorVaultInAnthropic`, y sus equivalentes `*Mock`),
+> `NormalizadorVaultInAnthropic`, y sus equivalentes `*Mock`;
+> `BuscadorSemanticoEmbeddings`, opcional),
 > `adapters/in_/` (`cli.py` — incluye `normalizar`, la versión
 > automatizable de `/normalizar-vault-in`, sin Claude Code de por
-> medio — y `telegram_bot.py`) y `main.py` (composition root). 113
+> medio — y `telegram_bot.py`) y `main.py` (composition root). 128
 > tests en `pytest` (ninguno necesita red, API key ni un bot de
 > Telegram real — los adaptadores de salida se prueban mockeando el
 > SDK correspondiente, mismo criterio que `orquestador`) y
@@ -36,7 +37,8 @@ intercambiables.
 > el bot de Telegram (hace falta un
 > `TELEGRAM_BOT_TOKEN` real) ni el panel Streamlit abierto en un
 > navegador. `requirements.txt`/`requirements-dev.txt` reflejan las
-> dependencias reales ya usadas, no una lista provisional.
+> dependencias reales ya usadas, no una lista provisional;
+> `requirements-semantica.txt`, la opcional de la búsqueda semántica.
 
 ## Dos formas de usarlo
 
@@ -73,8 +75,10 @@ adapters/in_/     → entradas: bot de Telegram (preguntar desde
                      Telegram" más abajo) y CLI (comandos de terminal:
                      guardar, buscar, reorganizar — ver más abajo).
 adapters/out/     → salidas: LLM (Anthropic, o un mock para
-                     desarrollar sin gastar tokens), y el repositorio
-                     de notas que lee/escribe los .md de vault_out.
+                     desarrollar sin gastar tokens), el repositorio
+                     de notas que lee/escribe los .md de vault_out, y
+                     el buscador semántico opcional (ver "Búsqueda
+                     semántica" más abajo).
 config/           → configuración declarativa (YAML) + loader: reglas
                      de clasificación, límites del árbol de carpetas
                      (ver "Crecimiento del árbol" más abajo); y
@@ -178,6 +182,10 @@ para que el árbol crezca de forma armoniosa:
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
+# Opcional: búsqueda por significado (ver "Búsqueda semántica").
+# Arrastra torch; sin ella, la búsqueda es solo literal.
+pip install -r requirements-semantica.txt
+
 cp .env.example .env
 # Rellena ANTHROPIC_API_KEY (o pon PROVEEDOR_LLM=mock para probar sin
 # gastar tokens ni tener API key) y, si quieres el bot, TELEGRAM_BOT_TOKEN
@@ -198,8 +206,9 @@ python main.py
 python -m adapters.in_.cli guardar --archivo respuesta.md
 cat respuesta.md | python -m adapters.in_.cli guardar --stdin
 
-# Buscar notas por texto y/o tags (lo mismo que usa el panel Streamlit).
-python -m adapters.in_.cli buscar "docker compose"
+# Buscar notas por texto y/o tags (lo mismo que usa el panel Streamlit),
+# ordenadas por relevancia si está la búsqueda semántica.
+python -m adapters.in_.cli buscar "deshacer commit"
 python -m adapters.in_.cli buscar --tag git --tag cli
 
 # Reorganizar vault_out/ en subcarpetas siguiendo las reglas de arriba.
@@ -223,6 +232,29 @@ pytest
 pytest tests/01_domain   # una sola capa
 ruff check .
 ```
+
+## Búsqueda semántica
+
+Con `requirements-semantica.txt` instalado, `cli.py buscar` y la
+pestaña Buscar del panel encuentran las notas por significado, no
+solo por palabras: «deshacer commit» encuentra «Cómo revertir el
+último commit». El adaptador (`adapters/out/buscador_semantico_embeddings.py`)
+usa el modelo multilingüe `paraphrase-multilingual-MiniLM-L12-v2` de
+`sentence-transformers`, en CPU, que se descarga la primera vez.
+
+- **Resultados**: primero las notas que superan el umbral de
+  similitud, de más a menos parecida; después, las que solo coinciden
+  literalmente. El filtro por tags se aplica igual que sin ella.
+- **Índice**: un vector por nota (título, resumen y contenido) en
+  `.cache/indice_semantico.json`, junto a `vault_out/`. La carpeta
+  `.cache/` lleva su propio `.gitignore`, así que queda fuera de git
+  también en el repo que embebe este. Se pone al día en cada búsqueda:
+  recalcula solo las notas nuevas o cambiadas, quita las borradas y no
+  cuesta nada mover una nota. Cambiar el modelo lo reconstruye
+  entero, y borrar el fichero también.
+- **Sin la dependencia**, o con `PROVEEDOR_LLM=mock` (lo que usan los
+  tests, que prueban el adaptador con un embedder falso), la búsqueda
+  es solo literal: subcadena en título, resumen y contenido.
 
 ## Bot de Telegram
 
