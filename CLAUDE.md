@@ -16,7 +16,7 @@ comandos expone) están en el `CLAUDE.md` de ese repo, no aquí.
 - **Identificadores y docstrings en español**, dataclasses/ABC como en
   `domain/`, clases de caso de uso con `__init__` (dependencias) +
   `ejecutar()` (parámetros de la llamada) — mismo estilo en todo el
-  proyecto, ver `/siguiente-pieza` para cómo continuarlo.
+  proyecto.
 - **`domain/` no importa nada de `adapters/`, `config/` ni
   `streamlit_app/`.** Es la única capa que de verdad define "qué es"
   este proyecto; todo lo demás depende de ella, nunca al revés.
@@ -28,6 +28,10 @@ comandos expone) están en el `CLAUDE.md` de ese repo, no aquí.
 - **`vault_out/` de este repo es contenido de ejemplo**, no el vault
   real de nadie — no le añadas notas personales o sensibles aquí; para
   eso está el repo host cuando este proyecto se embebe como submódulo.
-- Antes de dar una pieza por terminada: al menos un smoke test manual
-  y, si la capa ya tiene carpeta en `tests/`, tests reales con pytest
-  (ver `/siguiente-pieza`, paso 4).
+- Antes de dar una pieza por terminada: tests reales con pytest en la
+  carpeta numerada de su capa en `tests/`, y `ruff check .` limpio.
+- **Ciclo de desarrollo**: issues en el tablero de GitHub "Conocimiento"
+  con el plugin `dev@metodo` (`/dev:crear-issue`, `/dev:resolver-issue`,
+  `/dev:sprint`...). Sus datos (tablero, verificación) están en la
+  sección `## Método` del `CLAUDE.md` del repo que embebe este como
+  submódulo.

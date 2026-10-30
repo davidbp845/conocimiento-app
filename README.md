@@ -290,12 +290,10 @@ datos).
   esto al crear tags nuevos; este comando limpia los duplicados que se
   hubieran colado antes de esa comprobación. Dry-run por defecto, igual
   que `/reorganizar-vault`.
-- `/siguiente-pieza [pieza]` — continúa implementando/refinando *este
-  motor* capa a capa, siguiendo el orden y el estilo ya establecidos.
-  Comando de desarrollo del propio `conocimiento_app`, no de uso diario
-  del vault — no lo expongas si embebes este repo como submódulo de
-  otro pensado solo para archivar conocimiento.
-- `/ayuda` — lista estos comandos desde su frontmatter.
+
+El desarrollo del propio motor sigue el ciclo de issues del plugin
+`dev@metodo` (`/dev:crear-issue`, `/dev:resolver-issue`...), y
+`/dev:ayuda` lista todos los comandos disponibles.
 
 ## Pendiente de decidir
 
