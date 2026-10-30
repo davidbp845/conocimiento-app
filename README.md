@@ -183,7 +183,9 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
 # Opcional: búsqueda por significado (ver "Búsqueda semántica").
-# Arrastra torch; sin ella, la búsqueda es solo literal.
+# Arrastra torch; sin ella, la búsqueda es solo literal. Primero torch
+# sin CUDA: el adaptador corre siempre en CPU.
+pip install torch --index-url https://download.pytorch.org/whl/cpu
 pip install -r requirements-semantica.txt
 
 cp .env.example .env

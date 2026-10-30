@@ -1,6 +1,9 @@
 # Opcional: búsqueda semántica de notas (adapters/out/buscador_semantico_embeddings.py).
 # Aparte de requirements.txt porque arrastra torch (cientos de MB). Sin
 # instalarla, `buscar` y la pestaña Buscar usan solo la búsqueda literal.
-# Probado con: sentence-transformers 5.x.
+# Probado con: sentence-transformers 5.6 y 6.2, torch 2.15+cpu.
+# El adaptador corre siempre en CPU: instala antes torch sin CUDA, que
+# ocupa una fracción del de PyPI:
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
 
 sentence-transformers
