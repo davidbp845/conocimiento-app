@@ -243,6 +243,9 @@ solo por palabras: «deshacer commit» encuentra «Cómo revertir el
 último commit». El adaptador (`adapters/out/buscador_semantico_embeddings.py`)
 usa el modelo multilingüe `paraphrase-multilingual-MiniLM-L12-v2` de
 `sentence-transformers`, en CPU, que se descarga la primera vez.
+Torch y el modelo se cargan en memoria con la primera búsqueda con
+texto, no al arrancar el panel ni la CLI, y ahí se quedan mientras
+dure el proceso.
 
 - **Resultados**: primero las notas que superan el umbral de
   similitud, de más a menos parecida; después, las que solo coinciden
