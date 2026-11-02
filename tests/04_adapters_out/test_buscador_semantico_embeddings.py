@@ -1,5 +1,8 @@
+import importlib.util
 import json
 import sys
+
+import pytest
 
 from adapters.out.buscador_semantico_embeddings import BuscadorSemanticoEmbeddings, crear_buscador_semantico
 from domain.entities import FuenteNota, Nota
@@ -128,8 +131,21 @@ def test_indexa_titulo_resumen_y_contenido(tmp_path):
 
 
 def test_crear_buscador_semantico_devuelve_none_sin_sentence_transformers(tmp_path, monkeypatch):
-    # None en sys.modules hace que `import sentence_transformers` lance
-    # ImportError aunque esté instalado.
+    # None en sys.modules hace que find_spec lo dé por no instalado
+    # aunque lo esté.
     monkeypatch.setitem(sys.modules, "sentence_transformers", None)
 
     assert crear_buscador_semantico(tmp_path / "vault_out") is None
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("sentence_transformers") is None, reason="dependencia opcional no instalada"
+)
+def test_crear_buscador_semantico_no_importa_sentence_transformers(tmp_path, monkeypatch):
+    # Importarlo carga torch: solo debe pasar en la primera búsqueda.
+    monkeypatch.delitem(sys.modules, "sentence_transformers", raising=False)
+
+    buscador = crear_buscador_semantico(tmp_path / "vault_out")
+
+    assert buscador is not None
+    assert "sentence_transformers" not in sys.modules

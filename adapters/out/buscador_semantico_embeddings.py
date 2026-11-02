@@ -18,6 +18,7 @@ búsqueda literal."""
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import math
 from collections.abc import Callable
@@ -115,9 +116,9 @@ def crear_buscador_semantico(vault_out: Path | str) -> BuscadorSemantico | None:
     `<padre de vault_out>/.cache/indice_semantico.json`. El modelo se
     carga en la primera búsqueda, no aquí, para no frenar el arranque
     del panel ni de los subcomandos de la CLI que no buscan."""
-    try:
-        import sentence_transformers  # noqa: F401
-    except ImportError:
+    # find_spec y no import: importar sentence_transformers carga torch
+    # (~500 MB), y el panel llama a esta función en cada rerun.
+    if importlib.util.find_spec("sentence_transformers") is None:
         return None
 
     modelo_cargado = None
